@@ -37,24 +37,23 @@ const locationComplete = (function() {
                         czml.push(createCZMLBillboard({ name: place.name, center: [place.location.lng, place.location.lat, 0] }));
 
 
+                        // 绘制点位信息在视频上
+                        var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+                        var mesh = new THREE.Mesh(geometry, material);
+                        mesh.position.set(position.x, position.y, position.z);
 
+                        mesh.updateMatrix();
+                        mesh.matrixAutoUpdate = false;
 
-                        // var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-                        // var mesh = new THREE.Mesh(geometry, material);
-                        // mesh.position.set(position.x, position.y, position.z);
+                        // poi 的label（HTML）
+                        var text = createTextLabel();
+                        text.setHTML(place);
+                        text.setParent(mesh);
+                        store.textlabels.push(text);
+                        store.container.appendChild(text.element);
 
-                        // mesh.updateMatrix();
-                        // mesh.matrixAutoUpdate = false;
-
-                        // // poi 的label（HTML）
-                        // var text = createTextLabel();
-                        // text.setHTML(place);
-                        // text.setParent(mesh);
-                        // store.textlabels.push(text);
-                        // store.container.appendChild(text.element);
-
-                        // store.scene.add(mesh);
-                        // store.poi.push(mesh);
+                        store.scene.add(mesh);
+                        store.poi.push(mesh);
                     })
 
                     addCZMLData(czml);
