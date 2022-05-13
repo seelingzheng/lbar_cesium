@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta name='apple-mobile-web-app-capable' content='yes' />
+    <title>GeoAR demo</title>
+    <script src="./three.min.js"></script>
+    <!--     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/109/three.min.js"></script> -->
+    <script type="text/javascript" src="http://webapi.amap.com/maps?v=1.4.15&key=4f0f5594c4e3c4ae3ce67df92638a154"></script>
+</head>
+
+<link rel="stylesheet" href="./index.css">
+<link rel="stylesheet" href="./radar.css">
+
+<!--     后置摄像头视频流 -->
+<script src="./cameraStream.js"></script>
+<!--     航空次序欧拉角 -->
+<script src="./deviceorientation.js"></script>
+<!--     处理POI和移动设备的相对位置 -->
+<script src="./processLocation_three.js"></script>
+
+<body style='margin: 0; overflow: hidden;'>
+    <div id='mapcontainer'></div>
+    <video class="camerastream"></video>
+    <div class="radarbox_three">
+
+    </div>
+    <div id="container"></div>
+    <div id="status" style="z-index:100;color:red;position:absolute;left:5%;top:5%;"></div>
+    <div id="result" style="z-index:100;color:red;position:absolute;left:5%;top:10%;"></div>
+    <!--     全局变量 -->
+    <script src="./store.js"></script>
+    <script>
+        window.onload = () => {
+
+            store.scene = new THREE.Scene();
+            store.camera = new THREE.PerspectiveCamera(store.VAOV, window.innerWidth / window.innerHeight, 0.1, 100);
+            store.renderer.setSize(window.innerWidth, window.innerHeight);
+            store.renderer.gammaInput = true;
+            store.renderer.gammaOutput = true;
+            store.renderer.shadowMap.enabled = true;
+            // 环境光
+            var hemiLight;
+            hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+            hemiLight.color.setHSL(0.6, 1, 0.6);
+            hemiLight.groundColor.setHSL(0.095, 1, 0.75);
+            hemiLight.position.set(0, 50, 0);
+            store.scene.add(hemiLight);
+
+            store.container = document.getElementById("container");
+            // store.container.appendChild( store.renderer.domElement );
+
+            // 小地图
+            var helper = new THREE.CameraHelper(store.camera);
+            store.scene.add(helper);
+            store.scene.background = new THREE.Color(0xffffff);
+
+            // var axesHelper = new THREE.AxesHelper( 50 );
+            // store.scene.add( axesHelper );
+
+            var renderer2 = new THREE.WebGLRenderer({
+                antialias: true
+            });
+            renderer2.setSize(150, 150);
+            document.querySelector('.radarbox').appendChild(renderer2.domElement);
+            var camera2 = new THREE.PerspectiveCamera(store.VAOV, 1, 0.1, 5000);
+            // camera2.position.z = 50;
+            camera2.position.y = 125;
+            camera2.lookAt(store.scene.position);
+            store.scene.add(camera2);
+
+            // 位置处理模块
+            processLocation('mapcontainer');
+
+            // 姿态处理模块
+            window.addEventListener(store.eventName, function(event) {
+                let value = getTaitBryanAngles(event);
+                if (!value) return;
+                [yaw, pitch, roll] = value
+                // threejs的旋转按照右手定则，和航空次序欧拉角一样都是动轴旋转，
+                var euler = new THREE.Euler(pitch * Math.PI / 180, -yaw * Math.PI / 180, -(roll + window.orientation) * Math.PI / 180, 'YXZ');
+                store.camera.setRotationFromEuler(euler);
+                // store.camera.needsUpdate = true;
+
+                store.yaw = yaw;
+                store.pitch = pitch;
+                store.roll = roll;
+
+            }, false);
+
+            // window.addEventListener( "touchend", onDocumentTouchEnd, false );
+
+            var clock = new THREE.Clock();
+
+            var animate = function() {
+                // 使poi的label跟随poi，并始终保持水平
+                for (let i = 0; i < store.textlabels.length; i++) {
+                    store.textlabels[i].updatePosition();
+                }
+
+                requestAnimationFrame(animate);
+                // store.renderer.render( store.scene, store.camera );
+                store.camera.updateMatrixWorld();
+
+                // camera2.lookAt(store.camera);
+
+                // 小地图相机始终位于场景相机的正上方
+                renderer2.render(store.scene, camera2);
+            };
+
+            animate();
+
+            // 视频处理模块
+            const video = document.querySelector('.camerastream');
+            videoTrack = getCameraStream(video);
+
+            // test_7();
+        }
+    </script>
+    <!-- 测试 -->
+    <script src="./GLTFLoaders.js"></script>
+    <script src="./test.js"></script>
+</body>
+
+</html>
