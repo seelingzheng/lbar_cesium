@@ -37,8 +37,7 @@ const locationComplete = (function() {
                         czml.push(createCZMLBillboard({ name: place.name, center: [place.location.lng, place.location.lat, 0] }));
 
 
-                        // threejs label
-
+                        // 绘制点位信息在视频上
                         var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
                         var mesh = new THREE.Mesh(geometry, material);
                         mesh.position.set(position.x, position.y, position.z);
